@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({
 app.use(express.static("public"));
 
 app.get("/", function (req, res) {
-    res.send("The server is running, and we are connected. WOO-HOO!");
+    res.render("home");
 })
 
 
