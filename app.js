@@ -16,6 +16,14 @@ app.get("/", function (req, res) {
     res.render("home");
 });
 
+app.get("/about", function (req, res) {
+    res.render("about");
+});
+
+app.get("/contact", function (req, res) {
+    res.render("contact");
+});
+
 app.get("/login", function (req, res) {
     res.render("login");
     // if tenant, route to tenant page
@@ -33,6 +41,8 @@ app.get("/tenant", function (req, res) {
 app.get("/admin", function (req, res) {
     res.render("admin")
 });
+
+
 
 
 
