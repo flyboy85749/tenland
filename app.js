@@ -18,6 +18,8 @@ app.get("/", function (req, res) {
 
 app.get("/login", function (req, res) {
     res.render("login");
+    // if tenant, route to tenant page
+    // if landlord, redirect to landlord page
 });
 
 app.get("/register", function (req, res) {
@@ -28,7 +30,9 @@ app.get("/tenant", function (req, res) {
     res.render("tenant")
 });
 
-
+app.get("/admin", function (req, res) {
+    res.render("admin")
+});
 
 
 
