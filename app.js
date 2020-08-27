@@ -61,7 +61,7 @@ passport.use(new GoogleStrategy({
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
   function(accessToken, refreshToken, profile, cb) {
-    console.log(profile);
+    
 
     User.findOrCreate({ googleId: profile.id }, function (err, user) {
       return cb(err, user);
@@ -99,6 +99,24 @@ app.get("/admin", function (req, res) {
         res.render("/login")
     }
 
+});
+
+app.get("/about", function (req, res) {
+    res.render("about");
+});
+
+app.get("/contact", function (req, res) {
+    res.render("contact");
+});
+
+app.post("/contact", function (req, res) {
+    const name = req.body.name;
+    const email = req.body.email;
+    const comments = req.body.comments;
+    console.log(name);
+    console.log(email);
+    console.log(comments);
+    res.redirect("thanks");
 });
 
 app.get("/tenland", function(req, res){
@@ -167,7 +185,8 @@ app.post("/login", function(req, res){
     username: req.body.username,
     password: req.body.password
   });
-
+  console.log(user);
+  
   req.login(user, function(err){
     if (err) {
       console.log(err);
