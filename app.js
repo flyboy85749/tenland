@@ -1,7 +1,7 @@
-//jshint esversion:6
 require('dotenv').config();
 const express = require("express");
 const bodyParser = require("body-parser");
+const https = require("https");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
 const session = require('express-session');
@@ -70,6 +70,7 @@ passport.use(new GoogleStrategy({
 ));
 
 app.get("/", function(req, res){
+  // https.get
   res.render("home");
 });
 
@@ -185,8 +186,8 @@ app.post("/login", function(req, res){
     username: req.body.username,
     password: req.body.password
   });
-  console.log(user);
   
+
   req.login(user, function(err){
     if (err) {
       console.log(err);
