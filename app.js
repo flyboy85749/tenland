@@ -9,6 +9,7 @@ const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const findOrCreate = require('mongoose-findorcreate');
+const unirest = require("unirest");
 
 const app = express();
 
@@ -27,10 +28,13 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.connect("mongodb://localhost:27017/userDB", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 mongoose.set("useCreateIndex", true);
 
-const userSchema = new mongoose.Schema ({
+const userSchema = new mongoose.Schema({
   email: String,
   password: String,
   googleId: String,
@@ -44,12 +48,12 @@ const User = new mongoose.model("User", userSchema);
 
 passport.use(User.createStrategy());
 
-passport.serializeUser(function(user, done) {
+passport.serializeUser(function (user, done) {
   done(null, user.id);
 });
 
-passport.deserializeUser(function(id, done) {
-  User.findById(id, function(err, user) {
+passport.deserializeUser(function (id, done) {
+  User.findById(id, function (err, user) {
     done(err, user);
   });
 });
@@ -60,99 +64,135 @@ passport.use(new GoogleStrategy({
     callbackURL: "http://localhost:3000/auth/google/tenland",
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
-  function(accessToken, refreshToken, profile, cb) {
-    
+  function (accessToken, refreshToken, profile, cb) {
 
-    User.findOrCreate({ googleId: profile.id }, function (err, user) {
+
+    User.findOrCreate({
+      googleId: profile.id
+    }, function (err, user) {
       return cb(err, user);
     });
   }
 ));
 
-app.get("/", function(req, res){
-  // https.get
-  res.render("home");
+app.get("/", function (req, res) {
+
+
+  const req = unirest("GET", "https://realtor.p.rapidapi.com/properties/v2/list-for-rent");
+
+  req.query({
+    "sort": "relevance",
+    "city": "Tucson",
+    "state_code": "AZ",
+    "limit": "1",
+    "offset": "0"
+  });
+
+  req.headers({
+    "x-rapidapi-host": "realtor.p.rapidapi.com",
+    "x-rapidapi-key": process.env.API_KEY,
+    "useQueryString": true
+  });
+
+
+  req.end(function (res) {
+    if (res.error) throw new Error(res.error);
+
+    console.log(res.body);
+  });
+
+    res.send("Server is up and running");
 });
 
 app.get("/auth/google",
-  passport.authenticate('google', { scope: ["profile"] })
+  passport.authenticate('google', {
+    scope: ["profile"]
+  })
 );
 
 app.get("/auth/google/tenland",
-  passport.authenticate('google', { failureRedirect: "/login" }),
-  function(req, res) {
+  passport.authenticate('google', {
+    failureRedirect: "/login"
+  }),
+  function (req, res) {
     // Successful authentication, redirect to secrets.
     res.redirect("/admin");
   });
 
-app.get("/login", function(req, res){
+app.get("/login", function (req, res) {
   res.render("login");
 });
 
-app.get("/register", function(req, res){
+app.get("/register", function (req, res) {
   res.render("register");
 });
 
 app.get("/admin", function (req, res) {
-    if (req.isAuthenticated()) {
-        res.render("admin");
-    } else {
-        res.render("/login")
-    }
+  if (req.isAuthenticated()) {
+    res.render("admin");
+  } else {
+    res.render("/login")
+  }
 
 });
 
 app.get("/about", function (req, res) {
-    res.render("about");
+  res.render("about");
 });
 
 app.get("/contact", function (req, res) {
-    res.render("contact");
+  res.render("contact");
 });
 
 app.post("/contact", function (req, res) {
-    const name = req.body.name;
-    const email = req.body.email;
-    const comments = req.body.comments;
-    console.log(name);
-    console.log(email);
-    console.log(comments);
-    res.redirect("thanks");
+  const name = req.body.name;
+  const email = req.body.email;
+  const comments = req.body.comments;
+  console.log(name);
+  console.log(email);
+  console.log(comments);
+  res.redirect("thanks");
 });
 
-app.get("/tenland", function(req, res){
-  User.find({"secret": {$ne: null}}, function(err, foundUsers){
-    if (err){
+app.get("/tenland", function (req, res) {
+  User.find({
+    "secret": {
+      $ne: null
+    }
+  }, function (err, foundUsers) {
+    if (err) {
       console.log(err);
     } else {
       if (foundUsers) {
-        res.render("admin", {usersWithSecrets: foundUsers});
+        res.render("admin", {
+          usersWithSecrets: foundUsers
+        });
       }
     }
   });
 });
 
-app.get("/submit", function(req, res){
-  if (req.isAuthenticated()){
+app.get("/submit", function (req, res) {
+  if (req.isAuthenticated()) {
     res.render("submit");
   } else {
     res.redirect("/login");
   }
 });
 
-app.post("/submit", function(req, res){
+app.post("/submit", function (req, res) {
   const submittedSecret = req.body.secret;
 
-//Once the user is authenticated and their session gets saved, their user details are saved to req.user.
+  //Once the user is authenticated and their session gets saved, their user details are saved to req.user.
   // console.log(req.user.id);
 
-  User.findById(req.user.id, function(err, foundUser){
+  User.findById(req.user.id, function (err, foundUser) {
     if (err) {
       console.log(err);
     } else {
       if (foundUser) {
         foundUser.secret = submittedSecret;
-        foundUser.save(function(){
+        foundUser.save(function () {
           res.redirect("/admin");
         });
       }
@@ -160,19 +200,21 @@ app.post("/submit", function(req, res){
   });
 });
 
-app.get("/logout", function(req, res){
+app.get("/logout", function (req, res) {
   req.logout();
   res.redirect("/");
 });
 
-app.post("/register", function(req, res){
+app.post("/register", function (req, res) {
 
-  User.register({username: req.body.username}, req.body.password, function(err, user){
+  User.register({
+    username: req.body.username
+  }, req.body.password, function (err, user) {
     if (err) {
       console.log(err);
       res.redirect("/register");
     } else {
-      passport.authenticate("local")(req, res, function(){
+      passport.authenticate("local")(req, res, function () {
         res.redirect("/admin");
       });
     }
@@ -180,19 +222,19 @@ app.post("/register", function(req, res){
 
 });
 
-app.post("/login", function(req, res){
+app.post("/login", function (req, res) {
 
   const user = new User({
     username: req.body.username,
     password: req.body.password
   });
-  
 
-  req.login(user, function(err){
+
+  req.login(user, function (err) {
     if (err) {
       console.log(err);
     } else {
-      passport.authenticate("local")(req, res, function(){
+      passport.authenticate("local")(req, res, function () {
         res.redirect("/admin");
       });
     }
@@ -201,11 +243,6 @@ app.post("/login", function(req, res){
 });
 
 
-
-
-
-
-
-app.listen(3000, function() {
+app.listen(3000, function () {
   console.log("Server started on port 3000.");
 });
