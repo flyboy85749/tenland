@@ -78,9 +78,9 @@ passport.use(new GoogleStrategy({
 app.get("/", function (req, res) {
 
 
-  const req = unirest("GET", "https://realtor.p.rapidapi.com/properties/v2/list-for-rent");
+  const request = unirest("GET", "https://realtor.p.rapidapi.com/properties/v2/list-for-rent");
 
-  req.query({
+  request.query({
     "sort": "relevance",
     "city": "Tucson",
     "state_code": "AZ",
@@ -88,17 +88,23 @@ app.get("/", function (req, res) {
     "offset": "0"
   });
 
-  req.headers({
+  request.headers({
     "x-rapidapi-host": "realtor.p.rapidapi.com",
     "x-rapidapi-key": process.env.API_KEY,
     "useQueryString": true
   });
 
 
-  req.end(function (res) {
+  request.end(function (res) {
     if (res.error) throw new Error(res.error);
-
-    console.log(res.body);
+    const data = res.body.properties[0];
+    console.log(data.prop_type);
+    console.log(data.prop_status);
+    console.log(data.address.line);
+    console.log(data.address.city);
+    console.log(data.address.state);
+    console.log(data.photos[0]);
+    
   });
 
     res.send("Server is up and running");
